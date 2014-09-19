@@ -4,6 +4,14 @@ import urllib
 import urllib2
 
 
+class LoginError(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg
+
+
 class ScoreFetcher(object):
     def __init__(self, s_id, s_pwd):
         self.__s_id = s_id
@@ -37,7 +45,14 @@ class ScoreFetcher(object):
             'Button1': btn
         })
         req = urllib2.Request(self.__url_index, post_data)
-        res = urllib2.urlopen(req)
+        try:
+            res = urllib2.urlopen(req).read()
+        except urllib2.URLError, e:
+            if e.code == 404:
+                raise LoginError(
+                    "Login too frequently. Please try again after 30s.")
+        if "messagePage" in res:
+            raise LoginError("Incorrect username or password.")
 
     def get_scores(self, xn="2013-2014", xq="2"):
         content = urllib2.urlopen(self.__url_score).read()
